@@ -146,13 +146,11 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
-                // Phân tách các dòng và các ô của file CSV
                 const rows = textData.split(/\r?\n/).map(row => {
                     return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
                 });
 
                 if (rows.length > 0) {
-                    // Lấy hàng tiêu đề (Hàng đầu tiên) để định vị tên cột
                     const headers = rows[0].map(h => h.toUpperCase());
                     
                     const indexTen = headers.indexOf("HO TEN");
@@ -160,7 +158,6 @@
                     const indexQR = headers.indexOf("WHATSAAP");
                     const indexLogo = headers.indexOf("LOGO");
 
-                    // Tìm hàng chứa dữ liệu thực tế (bỏ qua các hàng trống)
                     let targetRow = null;
                     for (let i = 1; i < rows.length; i++) {
                         if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "") {
@@ -172,25 +169,22 @@
                     if (targetRow) {
                         const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
                         const linkAnh = fixSharePointLink(targetRow[indexAnh]);
-                        const linkQR = fixSharePointLink(targetRow[indexQR]);
+                        const linkQR = targetRow[indexQR] ? targetRow[indexQR].replace(/["']/g, "").trim() : "";
                         const linkLogo = fixSharePointLink(targetRow[indexLogo]);
 
-                        // 1. Hiển thị Tên
                         document.getElementById('managerName').innerText = tenNhanVien;
                         
-                        // 2. Hiển thị Ảnh chân dung
                         if (linkAnh) {
                             document.getElementById('managerImg').src = linkAnh;
                         }
 
-                        // 3. Hiển thị Logo khách sạn
                         if (linkLogo) {
                             const logoImg = document.getElementById('hotelLogo');
                             logoImg.src = linkLogo;
                             logoImg.style.display = 'block';
                         }
 
-                        // 4. Hiển thị Mã QR
+                        // Đọc link tự động nối chuỗi từ ô WHATSAAP để vẽ QR siêu chuẩn
                         if (linkQR) {
                             const qrImg = document.getElementById('qrcode');
                             qrImg.src = `https://qrserver.com{encodeURIComponent(linkQR)}`;
