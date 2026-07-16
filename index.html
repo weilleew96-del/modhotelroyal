@@ -129,6 +129,7 @@
     </div>
 
     <script>
+        // Đường link CSV kết nối trực tiếp đến bảng tính Google Sheets của bạn
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv'; 
 
         function fixSharePointLink(link) {
@@ -146,25 +147,21 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
+                // Thuật toán bóc tách dữ liệu CSV
                 const rows = textData.split(/\r?\n/).map(row => {
                     return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
                 });
 
-                if (rows.length > 0) {
-                    const headers = rows[0].map(h => h.toUpperCase());
+                if (rows.length > 1) {
+                    const headers = rows[0].map(h => h.toUpperCase().trim());
                     
                     const indexTen = headers.indexOf("HO TEN");
                     const indexAnh = headers.indexOf("ANH");
                     const indexQR = headers.indexOf("WHATSAPP");
                     const indexLogo = headers.indexOf("LOGO");
 
-                    let targetRow = null;
-                    for (let i = 1; i < rows.length; i++) {
-                        if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "") {
-                            targetRow = rows[i];
-                            break;
-                        }
-                    }
+                    // ÉP CỐ ĐỊNH: Lấy trực tiếp dữ liệu từ Hàng số 2 (rows[1]) trên Google Sheets
+                    const targetRow = rows[1]; 
 
                     if (targetRow) {
                         const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
@@ -172,19 +169,22 @@
                         const linkQR = targetRow[indexQR] ? targetRow[indexQR].replace(/["']/g, "").trim() : "";
                         const linkLogo = fixSharePointLink(targetRow[indexLogo]);
 
+                        // 1. Đồng bộ tên
                         document.getElementById('managerName').innerText = tenNhanVien;
                         
+                        // 2. Đồng bộ Ảnh chân dung
                         if (linkAnh) {
                             document.getElementById('managerImg').src = linkAnh;
                         }
 
+                        // 3. Đồng bộ Logo khách sạn
                         if (linkLogo) {
                             const logoImg = document.getElementById('hotelLogo');
                             logoImg.src = linkLogo;
                             logoImg.style.display = 'block';
                         }
 
-                        // Đọc link tự động nối chuỗi từ ô WHATSAAP để vẽ QR siêu chuẩn
+                        // 4. Đồng bộ Mã QR WhatsApp
                         if (linkQR) {
                             const qrImg = document.getElementById('qrcode');
                             qrImg.src = `https://qrserver.com{encodeURIComponent(linkQR)}`;
