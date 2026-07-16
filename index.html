@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hotel Royal Hoi An - Manager On Duty</title>
-    <!-- NHÚNG THƯ VIỆN CHUẨN: Tự vẽ mã QR bằng thuật toán nội bộ ngay trên TV không qua trung gian -->
+    <!-- Nhúng thư viện tạo mã QR tự động ổn định -->
     <script src="https://cloudflare.com"></script>
     <style>
         * { box-sizing: border-box; }
@@ -98,7 +98,6 @@
             margin-bottom: 15px;
             min-height: 160px;
         }
-        /* Căn chỉnh khối mã QR nội bộ */
         #qrcode canvas, #qrcode img {
             margin: 0 auto;
             width: 140px !important;
@@ -126,7 +125,6 @@
             We're here to assist you
         </div>
 
-        <!-- VÙNG TỰ VẼ QR: Đã đổi thành thẻ div để thuật toán nội bộ tự dựng hình khối lên màn hình TV -->
         <div class="qr-container">
             <div id="qrcode"></div>
         </div>
@@ -135,7 +133,6 @@
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv'; 
         
-        // Biến lưu trữ trạng thái QR để không bị vẽ đè lặp lại
         let qrCodeInstance = null;
         let lastQRLink = "";
 
@@ -154,47 +151,49 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
+                // Phân tách mảng dòng đơn giản hóa để tránh lỗi gãy kí tự chuỗi dài
                 const lines = textData.split(/\r?\n/);
                 
                 if (lines.length > 1) {
-                    const headerCells = lines[0].split(',');
-                    const dataCells = lines[1].split(',');
+                    const headerCells = lines[0].split(',').map(c => c.replace(/["']/g, "").trim().toUpperCase());
+                    const dataCells = lines[1].split(',').map(c => c.replace(/["']/g, "").trim());
 
-                    let indexTen = -1, indexAnh = -1, indexQR = -1, indexLogo = -1;
-                    for (let i = 0; i < headerCells.length; i++) {
-                        let h = headerCells[i].replace(/["']/g, "").trim().toUpperCase();
-                        if (h === "HO TEN") indexTen = i;
-                        if (h === "ANH") indexAnh = i;
-                        if (h === "WHATSAPP") indexQR = i;
-                        if (h === "LOGO") indexLogo = i;
-                    }
+                    // Ép định vị cột chuẩn xác tuyệt đối theo tiêu đề trên sheet
+                    let indexTen = headerCells.indexOf("HO TEN");
+                    let indexAnh = headerCells.indexOf("ANH");
+                    let indexQR = headerCells.indexOf("WHATSAPP");
+                    let indexLogo = headerCells.indexOf("LOGO");
 
+                    // Dự phòng số thứ tự cột nếu không tìm thấy chuỗi tiêu đề
                     if (indexTen === -1) indexTen = 1;
                     if (indexAnh === -1) indexAnh = 2;
                     if (indexQR === -1) indexQR = 4;
                     if (indexLogo === -1) indexLogo = 5;
 
-                    const tenNhanVien = dataCells[indexTen] ? dataCells[indexTen].replace(/["']/g, "").trim() : "CHƯA CÓ TÊN";
+                    const tenNhanVien = dataCells[indexTen] || "CHƯA CÓ TÊN";
                     const linkAnh = fixSharePointLink(dataCells[indexAnh]);
                     const linkQR = dataCells[indexQR] ? dataCells[indexQR].replace(/["']/g, "").trim() : "";
                     const linkLogo = fixSharePointLink(dataCells[indexLogo]);
 
+                    // 1. Cập nhật Tên
                     document.getElementById('managerName').innerText = tenNhanVien;
                     
+                    // 2. Cập nhật Ảnh chân dung
                     if (linkAnh) {
                         document.getElementById('managerImg').src = linkAnh;
                     }
 
+                    // 3. Cập nhật Logo
                     if (linkLogo) {
                         const logoImg = document.getElementById('hotelLogo');
                         logoImg.src = linkLogo;
                         logoImg.style.display = 'block';
                     }
 
-                    // TỰ ĐỘNG DỰNG MÃ QR BẰNG THUẬT TOÁN NỘI BỘ (Không dùng link ảnh mạng)
+                    // 4. ĐÃ SỬA LỖI: Thuật toán dọn dẹp sạch sẽ chuỗi thô để vẽ QR nội bộ trực tiếp
                     if (linkQR && linkQR !== lastQRLink) {
                         lastQRLink = linkQR;
-                        document.getElementById('qrcode').innerHTML = ""; // Xóa dữ liệu cũ tránh lỗi chồng hình
+                        document.getElementById('qrcode').innerHTML = ""; // Làm sạch khung vẽ
                         
                         qrCodeInstance = new QRCode(document.getElementById("qrcode"), { 
                             text: linkQR, 
