@@ -6,25 +6,38 @@
     <title>Hotel Royal Hoi An - Manager On Duty</title>
     <style>
         * { box-sizing: border-box; }
+        
+        /* Cấu hình lớp nền ép xoay dọc 90 độ toàn màn hình */
         body {
             margin: 0; padding: 0; 
             background-color: #ffffff; 
             color: #1a1a1a; 
             font-family: 'Times New Roman', Times, serif, 'Arial', sans-serif; 
-            text-align: center;
             overflow: hidden; 
-            height: 100vh; 
+            
+            /* Ép kích thước cố định theo tỷ lệ TV dọc */
+            width: 100vh; 
+            height: 100vw;
+            
+            /* Thuật toán xoay 90 độ và căn giữa hoàn chỉnh */
+            transform: rotate(90deg);
+            transform-origin: bottom left;
+            position: absolute;
+            top: -100vw;
+            left: 0;
+            
             display: flex; 
             justify-content: center; 
             align-items: center;
         }
 
+        /* Khung viền hoa văn ôm khít theo chiều dọc TV */
         .border-frame {
             border: 20px solid transparent;
             border-image: linear-gradient(to bottom right, #b8860b, #e6c280, #b8860b) 20;
-            width: 100vw;
-            height: 100vh;
-            padding: 20px;
+            width: 100%;
+            height: 100%;
+            padding: 40px 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -32,59 +45,61 @@
         }
 
         .logo-container {
-            height: 100px;
+            height: 110px;
             margin-top: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .logo-container img {
-            max-height: 90px;
+            max-height: 100px;
             object-fit: contain;
         }
 
         .title {
-            font-size: 4.2rem;
+            font-size: 4.5rem;
             font-family: 'Georgia', 'Times New Roman', serif;
             font-style: italic;
             font-weight: 500;
             color: #a37a3e; 
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin: 5px 0;
+            margin: 10px 0;
         }
 
+        /* Tối ưu lại kích thước ảnh chân dung cho khung dọc đứng */
         .avatar-container {
             border: 6px solid #a37a3e;
             padding: 2px;
             background: white;
             display: inline-block;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 15px 0;
         }
         .avatar {
-            width: 300px;
-            height: 360px;
+            width: 340px;
+            height: 420px;
             object-fit: cover;
             display: block;
             background-color: #f5f5f5;
         }
 
         .name {
-            font-size: 3rem;
+            font-size: 3.5rem;
             font-weight: bold;
             color: #a37a3e;
             text-transform: uppercase;
-            margin: 10px 0;
+            margin: 15px 0;
             letter-spacing: 1px;
         }
 
         .sub-text {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             color: #555555;
             font-style: italic;
             max-width: 600px;
-            line-height: 1.4;
-            margin: 5px 0;
+            line-height: 1.5;
+            margin: 10px 0;
         }
 
         .qr-container {
@@ -93,12 +108,12 @@
             align-items: center;
             padding: 5px;
             background: white;
-            margin-bottom: 15px;
-            min-height: 140px;
+            margin-bottom: 20px;
+            min-height: 150px;
         }
         .qr-container img {
-            width: 140px;
-            height: 140px;
+            width: 150px;
+            height: 150px;
             display: block;
             object-fit: contain;
         }
@@ -114,7 +129,7 @@
         <div class="title">Manager On Duty</div>
 
         <div class="avatar-container">
-            <img class="avatar" id="managerImg" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='300' height='360'></svg>" alt="Avatar">
+            <img class="avatar" id="managerImg" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='340' height='420'></svg>" alt="Avatar">
         </div>
 
         <div class="name" id="managerName">ĐANG TẢI...</div>
@@ -141,7 +156,6 @@
             return cleanLink;
         }
 
-        // Hàm liên tục tối ưu hóa chuỗi ngày hệ thống
         function getTodayStrings() {
             const today = new Date();
             const d = today.getDate();
@@ -151,7 +165,6 @@
             const dd = String(d).padStart(2, '0');
             const mm = String(m).padStart(2, '0');
             
-            // Trả về cả 2 định dạng phòng trường hợp nhập thiếu số 0 (16/07/2026 hoặc 16/7/2026)
             return [`${dd}/${mm}/${yyyy}`, `${d}/${m}/${yyyy}`];
         }
 
@@ -166,7 +179,7 @@
                 });
 
                 if (rows.length > 0) {
-                    const headers = rows[0].map(h => h.toUpperCase().trim());
+                    const headers = rows.map(h => h.toUpperCase().trim());
                     
                     const indexNgay = headers.indexOf("NGAY");
                     const indexTen = headers.indexOf("HO TEN");
@@ -177,7 +190,6 @@
                     const todayFormats = getTodayStrings();
                     let targetRow = null;
 
-                    // Quét toàn bộ bảng tìm hàng trùng ngày hôm nay
                     for (let i = 1; i < rows.length; i++) {
                         if (rows[i] && rows[i][indexNgay]) {
                             const currentSheetDate = rows[i][indexNgay].trim();
@@ -188,7 +200,6 @@
                         }
                     }
 
-                    // Nếu không có ngày hôm nay, lấy hàng đầu tiên có dữ liệu làm dự phòng
                     if (!targetRow) {
                         for (let i = 1; i < rows.length; i++) {
                             if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "") {
