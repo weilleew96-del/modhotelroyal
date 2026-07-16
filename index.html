@@ -141,13 +141,18 @@
             return cleanLink;
         }
 
-        // Hàm lấy ngày hiện tại định dạng DD/MM/YYYY để so khớp với Sheets
-        function getTodayString() {
+        // Hàm liên tục tối ưu hóa chuỗi ngày hệ thống
+        function getTodayStrings() {
             const today = new Date();
-            const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0'); // Tháng trong JS tính từ 0
+            const d = today.getDate();
+            const m = today.getMonth() + 1;
             const yyyy = today.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
+            
+            const dd = String(d).padStart(2, '0');
+            const mm = String(m).padStart(2, '0');
+            
+            // Trả về cả 2 định dạng phòng trường hợp nhập thiếu số 0 (16/07/2026 hoặc 16/7/2026)
+            return [`${dd}/${mm}/${yyyy}`, `${d}/${m}/${yyyy}`];
         }
 
         async function updateScreen() {
@@ -169,18 +174,21 @@
                     const indexQR = headers.indexOf("WHATSAPP");
                     const indexLogo = headers.indexOf("LOGO");
 
-                    const todayStr = getTodayString();
+                    const todayFormats = getTodayStrings();
                     let targetRow = null;
 
-                    // THUẬT TOÁN ĐỔI MỚI: Quét qua toàn bộ các hàng để tìm hàng nào trùng khớp ngày hôm nay ở Cột A
+                    // Quét toàn bộ bảng tìm hàng trùng ngày hôm nay
                     for (let i = 1; i < rows.length; i++) {
-                        if (rows[i] && rows[i][indexNgay] === todayStr) {
-                            targetRow = rows[i];
-                            break;
+                        if (rows[i] && rows[i][indexNgay]) {
+                            const currentSheetDate = rows[i][indexNgay].trim();
+                            if (todayFormats.includes(currentSheetDate)) {
+                                targetRow = rows[i];
+                                break;
+                            }
                         }
                     }
 
-                    // Trường hợp dự phòng: Nếu cả danh sách không ai trực ngày hôm nay, lấy tạm hàng đầu tiên có dữ liệu
+                    // Nếu không có ngày hôm nay, lấy hàng đầu tiên có dữ liệu làm dự phòng
                     if (!targetRow) {
                         for (let i = 1; i < rows.length; i++) {
                             if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "") {
@@ -216,11 +224,10 @@
                     }
                 }
             } catch (error) {
-                console.error("Lỗi đồng bộ lịch trực hệ thống:", error);
+                console.error("Lỗi đồng bộ dữ liệu:", error);
             }
         }
 
-        // Tự động kiểm tra và cập nhật lịch trực liên tục sau mỗi 5 giây
         updateScreen();
         setInterval(updateScreen, 5000);
     </script>
