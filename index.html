@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hotel Royal Hoi An - Manager On Duty</title>
-    <!-- Nhúng thư viện xử lý dữ liệu CSV chuyên nghiệp tránh lỗi dấu phẩy trong link SharePoint -->
-    <script src="https://cloudflare.com"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -150,62 +148,63 @@
                 
                 const textData = await response.text();
                 
-                // SỬ DỤNG THƯ VIỆN ĐỂ PHÂN TÍCH CHUẨN XÁC CHỐNG LỖI KÝ TỰ ĐẶC BIỆT
-                Papa.parse(textData, {
-                    header: false,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        const rows = results.data;
-                        
-                        if (rows.length > 1) {
-                            // Đưa các tiêu đề ở hàng 1 về chữ in hoa để dò tìm cột tự động
-                            const headers = rows[0].map(h => h.toString().toUpperCase().trim());
-                            
-                            const indexTen = headers.indexOf("HO TEN");
-                            const indexAnh = headers.indexOf("ANH");
-                            const indexQR = headers.indexOf("WHATSAPP");
-                            const indexLogo = headers.indexOf("LOGO");
+                // Thuật toán tách dòng cơ bản không dùng thư viện ngoài
+                const rows = textData.split(/\r?\n/).map(row => {
+                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
+                });
 
-                            // Đọc dữ liệu từ hàng số 2 (Mảng chỉ số là 1)
-                            const targetRow = rows[1]; 
+                if (rows.length > 0) {
+                    const headers = rows[0].map(h => h.toUpperCase().trim());
+                    
+                    const indexTen = headers.indexOf("HO TEN");
+                    const indexAnh = headers.indexOf("ANH");
+                    const indexQR = headers.indexOf("WHATSAPP");
+                    const indexLogo = headers.indexOf("LOGO");
 
-                            if (targetRow) {
-                                const tenNhanVien = targetRow[indexTen] ? targetRow[indexTen].toString().trim() : "CHƯA CÓ TÊN";
-                                const linkAnh = fixSharePointLink(targetRow[indexAnh]);
-                                const linkQR = fixSharePointLink(targetRow[indexQR]);
-                                const linkLogo = fixSharePointLink(targetRow[indexLogo]);
-
-                                // 1. Hiển thị Tên
-                                document.getElementById('managerName').innerText = tenNhanVien;
-                                
-                                // 2. Hiển thị Ảnh chân dung
-                                if (linkAnh) {
-                                    document.getElementById('managerImg').src = linkAnh;
-                                }
-
-                                // 3. Hiển thị Logo
-                                if (linkLogo) {
-                                    const logoImg = document.getElementById('hotelLogo');
-                                    logoImg.src = linkLogo;
-                                    logoImg.style.display = 'block';
-                                }
-
-                                // 4. Hiển thị hình ảnh Mã QR lấy trực tiếp từ SharePoint
-                                if (linkQR) {
-                                    const qrImg = document.getElementById('qrcode');
-                                    qrImg.src = linkQR;
-                                    qrImg.style.display = 'block';
-                                }
-                            }
+                    // TỰ ĐỘNG DÒ DÒNG: Quét từ dòng thứ 2 trở xuống để tìm dòng nào có tên nhân viên thực tế
+                    let targetRow = null;
+                    for (let i = 1; i < rows.length; i++) {
+                        if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "" && rows[i][indexTen] !== "HO TEN") {
+                            targetRow = rows[i];
+                            break;
                         }
                     }
-                });
+
+                    if (targetRow) {
+                        const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
+                        const linkAnh = fixSharePointLink(targetRow[indexAnh]);
+                        const linkQR = fixSharePointLink(targetRow[indexQR]);
+                        const linkLogo = fixSharePointLink(targetRow[indexLogo]);
+
+                        // 1. Cập nhật Tên hiển thị
+                        document.getElementById('managerName').innerText = tenNhanVien;
+                        
+                        // 2. Cập nhật Ảnh đại diện
+                        if (linkAnh) {
+                            document.getElementById('managerImg').src = linkAnh;
+                        }
+
+                        // 3. Cập nhật Logo khách sạn
+                        if (linkLogo) {
+                            const logoImg = document.getElementById('hotelLogo');
+                            logoImg.src = linkLogo;
+                            logoImg.style.display = 'block';
+                        }
+
+                        // 4. Cập nhật Ảnh QR Code từ SharePoint lên thẳng tivi
+                        if (linkQR) {
+                            const qrImg = document.getElementById('qrcode');
+                            qrImg.src = linkQR;
+                            qrImg.style.display = 'block';
+                        }
+                    }
+                }
             } catch (error) {
                 console.error("Lỗi đồng bộ dữ liệu hệ thống:", error);
             }
         }
 
-        // Chạy lần đầu và thiết lập tự động kiểm tra thay đổi mỗi 5 giây
+        // Kích hoạt chạy và đồng bộ liên tục sau mỗi 5 giây
         updateScreen();
         setInterval(updateScreen, 5000);
     </script>
