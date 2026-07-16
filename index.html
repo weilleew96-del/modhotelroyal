@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hotel Royal Hoi An - Manager On Duty</title>
+    <!-- NHÚNG THƯ VIỆN CHUẨN: Tự vẽ mã QR bằng thuật toán nội bộ ngay trên TV không qua trung gian -->
+    <script src="https://cloudflare.com"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -91,15 +93,16 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 5px;
+            padding: 10px;
             background: white;
             margin-bottom: 15px;
-            min-height: 140px;
+            min-height: 160px;
         }
-        .qr-container img {
-            width: 140px;
-            height: 140px;
-            display: block;
+        /* Căn chỉnh khối mã QR nội bộ */
+        #qrcode canvas, #qrcode img {
+            margin: 0 auto;
+            width: 140px !important;
+            height: 140px !important;
         }
     </style>
 </head>
@@ -123,14 +126,18 @@
             We're here to assist you
         </div>
 
+        <!-- VÙNG TỰ VẼ QR: Đã đổi thành thẻ div để thuật toán nội bộ tự dựng hình khối lên màn hình TV -->
         <div class="qr-container">
-            <img id="qrcode" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='1' height='1'></svg>" alt="QR Code" style="display:none;">
+            <div id="qrcode"></div>
         </div>
     </div>
 
     <script>
-        // Link kết nối trực tiếp lõi dữ liệu từ Google Sheets
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv'; 
+        
+        // Biến lưu trữ trạng thái QR để không bị vẽ đè lặp lại
+        let qrCodeInstance = null;
+        let lastQRLink = "";
 
         function fixSharePointLink(link) {
             if (!link) return "";
@@ -147,17 +154,13 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
-                
-                // Thuật toán bóc tách thô dòng đơn giản
                 const lines = textData.split(/\r?\n/);
+                
                 if (lines.length > 1) {
-                    // Tách hàng tiêu đề và hàng dữ liệu số 2
                     const headerCells = lines[0].split(',');
                     const dataCells = lines[1].split(',');
 
-                    // Tìm vị trí chính xác của từng cột dựa vào từ khóa tiêu đề ở Hàng 1
                     let indexTen = -1, indexAnh = -1, indexQR = -1, indexLogo = -1;
-                    
                     for (let i = 0; i < headerCells.length; i++) {
                         let h = headerCells[i].replace(/["']/g, "").trim().toUpperCase();
                         if (h === "HO TEN") indexTen = i;
@@ -166,7 +169,6 @@
                         if (h === "LOGO") indexLogo = i;
                     }
 
-                    // Nếu không dò được từ khóa, ép vị trí cột cố định theo bảng tính của bạn (B=1, C=2, E=4, F=5)
                     if (indexTen === -1) indexTen = 1;
                     if (indexAnh === -1) indexAnh = 2;
                     if (indexQR === -1) indexQR = 4;
@@ -177,26 +179,31 @@
                     const linkQR = dataCells[indexQR] ? dataCells[indexQR].replace(/["']/g, "").trim() : "";
                     const linkLogo = fixSharePointLink(dataCells[indexLogo]);
 
-                    // 1. Cập nhật Tên hiển thị
                     document.getElementById('managerName').innerText = tenNhanVien;
                     
-                    // 2. Cập nhật Ảnh đại diện quản lý ca trực
                     if (linkAnh) {
                         document.getElementById('managerImg').src = linkAnh;
                     }
 
-                    // 3. Cập nhật Logo nhận diện thương hiệu
                     if (linkLogo) {
                         const logoImg = document.getElementById('hotelLogo');
                         logoImg.src = linkLogo;
                         logoImg.style.display = 'block';
                     }
 
-                    // 4. ĐÃ SỬA LỖI TRIỆT ĐỂ: Gửi chuỗi URL sạch mã hóa đến API vẽ QR Code
-                    if (linkQR) {
-                        const qrImg = document.getElementById('qrcode');
-                        qrImg.src = `https://qrserver.com{encodeURIComponent(linkQR)}`;
-                        qrImg.style.display = 'block';
+                    // TỰ ĐỘNG DỰNG MÃ QR BẰNG THUẬT TOÁN NỘI BỘ (Không dùng link ảnh mạng)
+                    if (linkQR && linkQR !== lastQRLink) {
+                        lastQRLink = linkQR;
+                        document.getElementById('qrcode').innerHTML = ""; // Xóa dữ liệu cũ tránh lỗi chồng hình
+                        
+                        qrCodeInstance = new QRCode(document.getElementById("qrcode"), { 
+                            text: linkQR, 
+                            width: 140, 
+                            height: 140,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.H
+                        });
                     }
                 }
             } catch (error) {
@@ -204,7 +211,6 @@
             }
         }
 
-        // Kích hoạt chu kỳ chạy quét dữ liệu liên tục mỗi 5 giây
         updateScreen();
         setInterval(updateScreen, 5000);
     </script>
