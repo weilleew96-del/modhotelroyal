@@ -7,36 +7,26 @@
     <style>
         * { box-sizing: border-box; }
         
-        /* Cấu hình lớp nền ép xoay dọc 90 độ toàn màn hình */
+        /* CẤU TRÚC XOAY MỚI: Sử dụng flexbox đảo chiều tự nhiên không gây lỗi chặn tải ảnh */
         body {
             margin: 0; padding: 0; 
             background-color: #ffffff; 
             color: #1a1a1a; 
             font-family: 'Times New Roman', Times, serif, 'Arial', sans-serif; 
             overflow: hidden; 
-            
-            /* Ép kích thước cố định theo tỷ lệ TV dọc */
-            width: 100vh; 
-            height: 100vw;
-            
-            /* Thuật toán xoay 90 độ và căn giữa hoàn chỉnh */
-            transform: rotate(90deg);
-            transform-origin: bottom left;
-            position: absolute;
-            top: -100vw;
-            left: 0;
-            
-            display: flex; 
-            justify-content: center; 
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
             align-items: center;
         }
 
-        /* Khung viền hoa văn ôm khít theo chiều dọc TV */
+        /* Khung viền hoa văn ôm khít theo chiều đứng dọc của TV */
         .border-frame {
             border: 20px solid transparent;
             border-image: linear-gradient(to bottom right, #b8860b, #e6c280, #b8860b) 20;
-            width: 100%;
-            height: 100%;
+            width: 96vw;
+            height: 96vh;
             padding: 40px 20px;
             display: flex;
             flex-direction: column;
@@ -45,19 +35,19 @@
         }
 
         .logo-container {
-            height: 110px;
-            margin-top: 10px;
+            height: 100px;
+            margin-top: 5px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .logo-container img {
-            max-height: 100px;
+            max-height: 90px;
             object-fit: contain;
         }
 
         .title {
-            font-size: 4.5rem;
+            font-size: 4.2rem;
             font-family: 'Georgia', 'Times New Roman', serif;
             font-style: italic;
             font-weight: 500;
@@ -67,7 +57,7 @@
             margin: 10px 0;
         }
 
-        /* Tối ưu lại kích thước ảnh chân dung cho khung dọc đứng */
+        /* Tối ưu hóa tuyệt đối tỷ lệ ảnh chân dung cho tivi đứng */
         .avatar-container {
             border: 6px solid #a37a3e;
             padding: 2px;
@@ -99,7 +89,7 @@
             font-style: italic;
             max-width: 600px;
             line-height: 1.5;
-            margin: 10px 0;
+            margin: 5px 0;
         }
 
         .qr-container {
@@ -108,7 +98,7 @@
             align-items: center;
             padding: 5px;
             background: white;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             min-height: 150px;
         }
         .qr-container img {
@@ -170,6 +160,7 @@
 
         async function updateScreen() {
             try {
+                // Thêm tham số timestamp bẻ gãy bộ nhớ đệm cache của trình duyệt TV
                 const response = await fetch(SHEET_URL + '&t=' + new Date().getTime());
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
@@ -179,7 +170,7 @@
                 });
 
                 if (rows.length > 0) {
-                    const headers = rows.map(h => h.toUpperCase().trim());
+                    const headers = rows[0].map(h => h.toUpperCase().trim());
                     
                     const indexNgay = headers.indexOf("NGAY");
                     const indexTen = headers.indexOf("HO TEN");
@@ -235,7 +226,7 @@
                     }
                 }
             } catch (error) {
-                console.error("Lỗi đồng bộ dữ liệu:", error);
+                console.error("Lỗi đồng bộ dữ liệu hệ thống ca trực:", error);
             }
         }
 
