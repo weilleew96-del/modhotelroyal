@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Royal Hoi An - Manager On Duty</title>
+    <!-- Nhúng thư viện tạo mã QR tự động ổn định -->
+    <script src="https://cloudflare.com"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0; 
+            background-color: #ffffff; /* Nền trắng như mẫu */
+            color: #1a1a1a; 
+            font-family: 'Times New Roman', Times, serif, 'Arial', sans-serif; 
+            text-align: center;
+            overflow: hidden; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+        }
+
+        /* Khung viền hoa văn bao quanh màn hình */
+        .border-frame {
+            border: 20px solid transparent;
+            /* Thêm viền hoa văn sang trọng nếu có link ảnh viền, ở đây dùng tạm viền đôi màu vàng kim tạo hiệu ứng tương tự */
+            border-image: linear-gradient(to bottom right, #b8860b, #e6c280, #b8860b) 20;
+            width: 100vw;
+            height: 100vh;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Logo khách sạn phía trên cùng */
+        .logo-container {
+            max-height: 120px;
+            margin-bottom: 10px;
+        }
+        .logo-container img {
+            max-height: 100px;
+            object-fit: contain;
+        }
+
+        /* Tiêu đề MANAGER ON DUTY phông chữ nghệ thuật màu vàng đồng */
+        .title {
+            font-size: 4.5rem;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-style: italic;
+            font-weight: 500;
+            color: #a37a3e; /* Màu vàng đồng sang trọng giống ảnh mẫu */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 10px 0;
+        }
+
+        /* Khung chứa ảnh chân dung có viền vàng */
+        .avatar-container {
+            border: 6px solid #a37a3e;
+            padding: 2px;
+            background: white;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 15px 0;
+        }
+        .avatar {
+            width: 320px;
+            height: 380px;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Tên nhân viên chữ đậm, màu vàng đồng */
+        .name {
+            font-size: 3.2rem;
+            font-weight: bold;
+            color: #a37a3e;
+            text-transform: uppercase;
+            margin: 15px 0;
+            letter-spacing: 1px;
+        }
+
+        /* Dòng chữ phụ đề hướng dẫn quét QR */
+        .sub-text {
+            font-size: 1.4rem;
+            color: #555555;
+            font-style: italic;
+            max-width: 600px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        /* Khung chứa mã QR mã hóa tự động */
+        .qr-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            margin-bottom: 20px;
+        }
+        #qrcode img {
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="border-frame">
+        <!-- Khu vực Logo (Bạn thay link ảnh logo của khách sạn vào đây nếu muốn) -->
+        <div class="logo-container">
+            <img id="hotelLogo" src="https://placeholder.com" alt="Hotel Logo">
+        </div>
+
+        <!-- Tiêu đề chính -->
+        <div class="title" id="dutyTitle">Manager On Duty</div>
+
+        <!-- Ảnh chân dung quản lý -->
+        <div class="avatar-container">
+            <img class="avatar" id="managerImg" src="https://placeholder.com" alt="Avatar">
+        </div>
+
+        <!-- Tên quản lý -->
+        <div class="name" id="managerName">ĐANG TẢI...</div>
+
+        <!-- Hướng dẫn bằng tiếng Anh giống mẫu -->
+        <div class="sub-text">
+            Scan the QR code to contact our Duty Manager directly<br>
+            We're here to assist you
+        </div>
+
+        <!-- Khu vực hiển thị mã QR -->
+        <div class="qr-container">
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <script>
+        // BƯỚC QUAN TRỌNG: Thay link CSV xuất bản từ Google Sheets của bạn vào đây
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pubhtml'; 
+
+        async function updateScreen() {
+            try {
+                const response = await fetch(SHEET_URL);
+                if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
+                
+                const textData = await response.text();
+                
+                // Hàm chuẩn hóa để phân tách chính xác các hàng trong file CSV từ Google Sheet
+                const rows = textData.split(/\r?\n/).map(row => {
+                    // Xử lý trường hợp chuỗi chứa dấu phẩy trong ngoặc kép nếu có
+                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                });
+
+                // Kiểm tra nếu có dữ liệu ở hàng thứ 2 (chỉ số mảng là 1)
+                if (rows.length > 1) {
+                    const targetRow = rows[1]; 
+
+                    // Định vị đúng thứ tự cột trên Sheets của bạn (Cột A=0, B=1, C=2, D=3...)
+                    const tenNhanVien = targetRow[1] ? targetRow[1].replace(/["']/g, "").trim() : "CHƯA CÓ TÊN";
+                    const linkAnh = targetRow[2] ? targetRow[2].replace(/["']/g, "").trim() : "";
+                    const linkQR = targetRow[3] ? targetRow[3].replace(/["']/g, "").trim() : "https://google.com";
+
+                    // Cập nhật thông tin lên màn hình giao diện TV
+                    document.getElementById('managerName').innerText = tenNhanVien;
+                    if(linkAnh) {
+                        document.getElementById('managerImg').src = linkAnh;
+                    }
+
+                    // Tự động xóa mã QR cũ và vẽ lại mã QR mới
+                    document.getElementById('qrcode').innerHTML = "";
+                    new QRCode(document.getElementById("qrcode"), { 
+                        text: linkQR, 
+                        width: 160, 
+                        height: 160,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                }
+            } catch (error) {
+                console.error("Lỗi cập nhật màn hình ca trực:", error);
+            }
+        }
+
+        // Chạy ngay khi tải trang và thiết lập tự động kiểm tra thay đổi mỗi 5 giây
+        updateScreen();
+        setInterval(updateScreen, 5000);
+    </script>
+</body>
+</html>
