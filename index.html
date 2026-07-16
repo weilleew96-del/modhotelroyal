@@ -94,6 +94,7 @@
             padding: 5px;
             background: white;
             margin-bottom: 15px;
+            min-height: 140px;
         }
         .qr-container img {
             width: 140px;
@@ -105,7 +106,6 @@
 <body>
 
     <div class="border-frame">
-        <!-- Khu vực hiển thị Logo tự động từ cột E -->
         <div class="logo-container">
             <img id="hotelLogo" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='1' height='1'></svg>" alt="Hotel Logo" style="display:none;">
         </div>
@@ -123,16 +123,14 @@
             We're here to assist you
         </div>
 
-        <!-- Khu vực hiển thị Mã QR tự động -->
-        <div class="qr-container" id="qrParent">
-            <img id="qrcode" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='1' height='1'></svg>" alt="QR Code">
+        <div class="qr-container">
+            <img id="qrcode" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='1' height='1'></svg>" alt="QR Code" style="display:none;">
         </div>
     </div>
 
     <script>
         const SHEET_URL = 'https://google.com'; 
 
-        // Hàm hỗ trợ chuẩn hóa link sharepoint sang link tải trực tiếp
         function fixSharePointLink(link) {
             if (!link) return "";
             let cleanLink = link.replace(/["']/g, "").trim();
@@ -148,43 +146,56 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
+                // Phân tách các dòng và các ô của file CSV
                 const rows = textData.split(/\r?\n/).map(row => {
-                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
                 });
 
-                let targetRow = null;
-                for (let i = 1; i < rows.length; i++) {
-                    if (rows[i] && rows[i][1] && rows[i][1].trim() !== "" && !rows[i][1].includes("HO TEN")) {
-                        targetRow = rows[i];
-                        break;
-                    }
-                }
-
-                if (targetRow) {
-                    const tenNhanVien = targetRow[1] ? targetRow[1].replace(/["']/g, "").trim() : "CHƯA CÓ TÊN";
-                    let linkAnh = fixSharePointLink(targetRow[2]);
-                    let linkQR = fixSharePointLink(targetRow[3]);
-                    let linkLogo = fixSharePointLink(targetRow[4]); // Đọc dữ liệu từ cột E
-
-                    // 1. Cập nhật Tên
-                    document.getElementById('managerName').innerText = tenNhanVien;
+                if (rows.length > 0) {
+                    // Lấy hàng tiêu đề (Hàng đầu tiên) để định vị tên cột
+                    const headers = rows[0].map(h => h.toUpperCase());
                     
-                    // 2. Cập nhật Ảnh chân dung
-                    if (linkAnh) {
-                        document.getElementById('managerImg').src = linkAnh;
+                    const indexTen = headers.indexOf("HO TEN");
+                    const indexAnh = headers.indexOf("ANH");
+                    const indexQR = headers.indexOf("WHATSAAP");
+                    const indexLogo = headers.indexOf("LOGO");
+
+                    // Tìm hàng chứa dữ liệu thực tế (bỏ qua các hàng trống)
+                    let targetRow = null;
+                    for (let i = 1; i < rows.length; i++) {
+                        if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "") {
+                            targetRow = rows[i];
+                            break;
+                        }
                     }
 
-                    // 3. Cập nhật Logo khách sạn
-                    if (linkLogo) {
-                        const logoImg = document.getElementById('hotelLogo');
-                        logoImg.src = linkLogo;
-                        logoImg.style.display = 'block';
-                    }
+                    if (targetRow) {
+                        const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
+                        const linkAnh = fixSharePointLink(targetRow[indexAnh]);
+                        const linkQR = fixSharePointLink(targetRow[indexQR]);
+                        const linkLogo = fixSharePointLink(targetRow[indexLogo]);
 
-                    // 4. SỬA LỖI TẠO QR: Dùng API tạo ảnh QR siêu tốc và ổn định tuyệt đối
-                    if (linkQR) {
-                        const qrUrl = `https://qrserver.com{encodeURIComponent(linkQR)}`;
-                        document.getElementById('qrcode').src = qrUrl;
+                        // 1. Hiển thị Tên
+                        document.getElementById('managerName').innerText = tenNhanVien;
+                        
+                        // 2. Hiển thị Ảnh chân dung
+                        if (linkAnh) {
+                            document.getElementById('managerImg').src = linkAnh;
+                        }
+
+                        // 3. Hiển thị Logo khách sạn
+                        if (linkLogo) {
+                            const logoImg = document.getElementById('hotelLogo');
+                            logoImg.src = linkLogo;
+                            logoImg.style.display = 'block';
+                        }
+
+                        // 4. Hiển thị Mã QR
+                        if (linkQR) {
+                            const qrImg = document.getElementById('qrcode');
+                            qrImg.src = `https://qrserver.com{encodeURIComponent(linkQR)}`;
+                            qrImg.style.display = 'block';
+                        }
                     }
                 }
             } catch (error) {
