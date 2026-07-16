@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hotel Royal Hoi An - Manager On Duty</title>
+    <!-- Nhúng thư viện xử lý dữ liệu CSV chuyên nghiệp tránh lỗi dấu phẩy trong link SharePoint -->
+    <script src="https://cloudflare.com"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -147,54 +149,63 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
-                const rows = textData.split(/\r?\n/).map(row => {
-                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
-                });
-
-                if (rows.length > 1) {
-                    const headers = rows[0].map(h => h.toUpperCase().trim());
-                    
-                    const indexTen = headers.indexOf("HO TEN");
-                    const indexAnh = headers.indexOf("ANH");
-                    const indexQR = headers.indexOf("WHATSAPP");
-                    const indexLogo = headers.indexOf("LOGO");
-
-                    const targetRow = rows[2]; // Lấy dữ liệu cố định tại Hàng số 2 của Sheets
-
-                    if (targetRow) {
-                        const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
-                        const linkAnh = fixSharePointLink(targetRow[indexAnh]);
-                        const linkQR = fixSharePointLink(targetRow[indexQR]); // Đọc link ảnh QR trực tiếp từ SharePoint
-                        const linkLogo = fixSharePointLink(targetRow[indexLogo]);
-
-                        // 1. Hiển thị Tên
-                        document.getElementById('managerName').innerText = tenNhanVien;
+                
+                // SỬ DỤNG THƯ VIỆN ĐỂ PHÂN TÍCH CHUẨN XÁC CHỐNG LỖI KÝ TỰ ĐẶC BIỆT
+                Papa.parse(textData, {
+                    header: false,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        const rows = results.data;
                         
-                        // 2. Hiển thị Ảnh chân dung
-                        if (linkAnh) {
-                            document.getElementById('managerImg').src = linkAnh;
-                        }
+                        if (rows.length > 1) {
+                            // Đưa các tiêu đề ở hàng 1 về chữ in hoa để dò tìm cột tự động
+                            const headers = rows[0].map(h => h.toString().toUpperCase().trim());
+                            
+                            const indexTen = headers.indexOf("HO TEN");
+                            const indexAnh = headers.indexOf("ANH");
+                            const indexQR = headers.indexOf("WHATSAPP");
+                            const indexLogo = headers.indexOf("LOGO");
 
-                        // 3. Hiển thị Logo
-                        if (linkLogo) {
-                            const logoImg = document.getElementById('hotelLogo');
-                            logoImg.src = linkLogo;
-                            logoImg.style.display = 'block';
-                        }
+                            // Đọc dữ liệu từ hàng số 2 (Mảng chỉ số là 1)
+                            const targetRow = rows[1]; 
 
-                        // 4. Hiển thị Mã QR dạng ảnh trực tiếp từ Sheets
-                        if (linkQR) {
-                            const qrImg = document.getElementById('qrcode');
-                            qrImg.src = linkQR;
-                            qrImg.style.display = 'block';
+                            if (targetRow) {
+                                const tenNhanVien = targetRow[indexTen] ? targetRow[indexTen].toString().trim() : "CHƯA CÓ TÊN";
+                                const linkAnh = fixSharePointLink(targetRow[indexAnh]);
+                                const linkQR = fixSharePointLink(targetRow[indexQR]);
+                                const linkLogo = fixSharePointLink(targetRow[indexLogo]);
+
+                                // 1. Hiển thị Tên
+                                document.getElementById('managerName').innerText = tenNhanVien;
+                                
+                                // 2. Hiển thị Ảnh chân dung
+                                if (linkAnh) {
+                                    document.getElementById('managerImg').src = linkAnh;
+                                }
+
+                                // 3. Hiển thị Logo
+                                if (linkLogo) {
+                                    const logoImg = document.getElementById('hotelLogo');
+                                    logoImg.src = linkLogo;
+                                    logoImg.style.display = 'block';
+                                }
+
+                                // 4. Hiển thị hình ảnh Mã QR lấy trực tiếp từ SharePoint
+                                if (linkQR) {
+                                    const qrImg = document.getElementById('qrcode');
+                                    qrImg.src = linkQR;
+                                    qrImg.style.display = 'block';
+                                }
+                            }
                         }
                     }
-                }
+                });
             } catch (error) {
                 console.error("Lỗi đồng bộ dữ liệu hệ thống:", error);
             }
         }
 
+        // Chạy lần đầu và thiết lập tự động kiểm tra thay đổi mỗi 5 giây
         updateScreen();
         setInterval(updateScreen, 5000);
     </script>
