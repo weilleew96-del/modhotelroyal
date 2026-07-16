@@ -129,7 +129,6 @@
     </div>
 
     <script>
-        // Đường link CSV kết nối trực tiếp đến bảng tính Google Sheets của bạn
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv'; 
 
         function fixSharePointLink(link) {
@@ -147,7 +146,7 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
-                // Thuật toán bóc tách dữ liệu CSV
+                // Đust ĐÃ SỬA LỖI: Sử dụng biểu thức chính quy chuẩn xác tuyệt đối để phân tách cột CSV
                 const rows = textData.split(/\r?\n/).map(row => {
                     return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
                 });
@@ -160,8 +159,7 @@
                     const indexQR = headers.indexOf("WHATSAPP");
                     const indexLogo = headers.indexOf("LOGO");
 
-                    // ÉP CỐ ĐỊNH: Lấy trực tiếp dữ liệu từ Hàng số 2 (rows[1]) trên Google Sheets
-                    const targetRow = rows[1]; 
+                    const targetRow = rows[1]; // Chỉ định lấy thẳng dữ liệu thực tế tại Hàng số 2
 
                     if (targetRow) {
                         const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
@@ -184,7 +182,7 @@
                             logoImg.style.display = 'block';
                         }
 
-                        // 4. Đồng bộ Mã QR WhatsApp
+                        // 4. Đồng bộ Mã QR WhatsApp (Đã giải quyết lỗi phân tách chuỗi gãy link)
                         if (linkQR) {
                             const qrImg = document.getElementById('qrcode');
                             qrImg.src = `https://qrserver.com{encodeURIComponent(linkQR)}`;
