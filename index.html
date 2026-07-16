@@ -180,12 +180,13 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
+                // Thuật toán tách dòng bằng biểu thức chính quy (Regex) tối ưu tuyệt đối
                 const rows = textData.split(/\r?\n/).map(row => {
                     return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
                 });
 
                 if (rows.length > 0) {
-                    const headers = rows.map(h => h.toUpperCase().trim());
+                    const headers = rows[0].map(h => h.toUpperCase().trim());
                     
                     const indexNgay = headers.indexOf("NGAY");
                     const indexTen = headers.indexOf("HO TEN");
