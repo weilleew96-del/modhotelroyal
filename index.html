@@ -141,14 +141,21 @@
             return cleanLink;
         }
 
+        // Hàm lấy ngày hiện tại định dạng DD/MM/YYYY để so khớp với Sheets
+        function getTodayString() {
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0'); // Tháng trong JS tính từ 0
+            const yyyy = today.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
         async function updateScreen() {
             try {
                 const response = await fetch(SHEET_URL + '&t=' + new Date().getTime());
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
-                
-                // Thuật toán tách dòng cơ bản không dùng thư viện ngoài
                 const rows = textData.split(/\r?\n/).map(row => {
                     return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
                 });
@@ -156,17 +163,30 @@
                 if (rows.length > 0) {
                     const headers = rows[0].map(h => h.toUpperCase().trim());
                     
+                    const indexNgay = headers.indexOf("NGAY");
                     const indexTen = headers.indexOf("HO TEN");
                     const indexAnh = headers.indexOf("ANH");
                     const indexQR = headers.indexOf("WHATSAPP");
                     const indexLogo = headers.indexOf("LOGO");
 
-                    // TỰ ĐỘNG DÒ DÒNG: Quét từ dòng thứ 2 trở xuống để tìm dòng nào có tên nhân viên thực tế
+                    const todayStr = getTodayString();
                     let targetRow = null;
+
+                    // THUẬT TOÁN ĐỔI MỚI: Quét qua toàn bộ các hàng để tìm hàng nào trùng khớp ngày hôm nay ở Cột A
                     for (let i = 1; i < rows.length; i++) {
-                        if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "" && rows[i][indexTen] !== "HO TEN") {
+                        if (rows[i] && rows[i][indexNgay] === todayStr) {
                             targetRow = rows[i];
                             break;
+                        }
+                    }
+
+                    // Trường hợp dự phòng: Nếu cả danh sách không ai trực ngày hôm nay, lấy tạm hàng đầu tiên có dữ liệu
+                    if (!targetRow) {
+                        for (let i = 1; i < rows.length; i++) {
+                            if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "") {
+                                targetRow = rows[i];
+                                break;
+                            }
                         }
                     }
 
@@ -176,22 +196,18 @@
                         const linkQR = fixSharePointLink(targetRow[indexQR]);
                         const linkLogo = fixSharePointLink(targetRow[indexLogo]);
 
-                        // 1. Cập nhật Tên hiển thị
                         document.getElementById('managerName').innerText = tenNhanVien;
                         
-                        // 2. Cập nhật Ảnh đại diện
                         if (linkAnh) {
                             document.getElementById('managerImg').src = linkAnh;
                         }
 
-                        // 3. Cập nhật Logo khách sạn
                         if (linkLogo) {
                             const logoImg = document.getElementById('hotelLogo');
                             logoImg.src = linkLogo;
                             logoImg.style.display = 'block';
                         }
 
-                        // 4. Cập nhật Ảnh QR Code từ SharePoint lên thẳng tivi
                         if (linkQR) {
                             const qrImg = document.getElementById('qrcode');
                             qrImg.src = linkQR;
@@ -200,11 +216,11 @@
                     }
                 }
             } catch (error) {
-                console.error("Lỗi đồng bộ dữ liệu hệ thống:", error);
+                console.error("Lỗi đồng bộ lịch trực hệ thống:", error);
             }
         }
 
-        // Kích hoạt chạy và đồng bộ liên tục sau mỗi 5 giây
+        // Tự động kiểm tra và cập nhật lịch trực liên tục sau mỗi 5 giây
         updateScreen();
         setInterval(updateScreen, 5000);
     </script>
