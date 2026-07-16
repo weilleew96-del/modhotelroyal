@@ -129,6 +129,7 @@
     </div>
 
     <script>
+        // Link kết nối trực tiếp lõi dữ liệu từ Google Sheets
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv'; 
 
         function fixSharePointLink(link) {
@@ -146,55 +147,64 @@
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
-                // Đust ĐÃ SỬA LỖI: Sử dụng biểu thức chính quy chuẩn xác tuyệt đối để phân tách cột CSV
-                const rows = textData.split(/\r?\n/).map(row => {
-                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
-                });
+                
+                // Thuật toán bóc tách thô dòng đơn giản
+                const lines = textData.split(/\r?\n/);
+                if (lines.length > 1) {
+                    // Tách hàng tiêu đề và hàng dữ liệu số 2
+                    const headerCells = lines[0].split(',');
+                    const dataCells = lines[1].split(',');
 
-                if (rows.length > 1) {
-                    const headers = rows[0].map(h => h.toUpperCase().trim());
+                    // Tìm vị trí chính xác của từng cột dựa vào từ khóa tiêu đề ở Hàng 1
+                    let indexTen = -1, indexAnh = -1, indexQR = -1, indexLogo = -1;
                     
-                    const indexTen = headers.indexOf("HO TEN");
-                    const indexAnh = headers.indexOf("ANH");
-                    const indexQR = headers.indexOf("WHATSAPP");
-                    const indexLogo = headers.indexOf("LOGO");
+                    for (let i = 0; i < headerCells.length; i++) {
+                        let h = headerCells[i].replace(/["']/g, "").trim().toUpperCase();
+                        if (h === "HO TEN") indexTen = i;
+                        if (h === "ANH") indexAnh = i;
+                        if (h === "WHATSAPP") indexQR = i;
+                        if (h === "LOGO") indexLogo = i;
+                    }
 
-                    const targetRow = rows[1]; // Chỉ định lấy thẳng dữ liệu thực tế tại Hàng số 2
+                    // Nếu không dò được từ khóa, ép vị trí cột cố định theo bảng tính của bạn (B=1, C=2, E=4, F=5)
+                    if (indexTen === -1) indexTen = 1;
+                    if (indexAnh === -1) indexAnh = 2;
+                    if (indexQR === -1) indexQR = 4;
+                    if (indexLogo === -1) indexLogo = 5;
 
-                    if (targetRow) {
-                        const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
-                        const linkAnh = fixSharePointLink(targetRow[indexAnh]);
-                        const linkQR = targetRow[indexQR] ? targetRow[indexQR].replace(/["']/g, "").trim() : "";
-                        const linkLogo = fixSharePointLink(targetRow[indexLogo]);
+                    const tenNhanVien = dataCells[indexTen] ? dataCells[indexTen].replace(/["']/g, "").trim() : "CHƯA CÓ TÊN";
+                    const linkAnh = fixSharePointLink(dataCells[indexAnh]);
+                    const linkQR = dataCells[indexQR] ? dataCells[indexQR].replace(/["']/g, "").trim() : "";
+                    const linkLogo = fixSharePointLink(dataCells[indexLogo]);
 
-                        // 1. Đồng bộ tên
-                        document.getElementById('managerName').innerText = tenNhanVien;
-                        
-                        // 2. Đồng bộ Ảnh chân dung
-                        if (linkAnh) {
-                            document.getElementById('managerImg').src = linkAnh;
-                        }
+                    // 1. Cập nhật Tên hiển thị
+                    document.getElementById('managerName').innerText = tenNhanVien;
+                    
+                    // 2. Cập nhật Ảnh đại diện quản lý ca trực
+                    if (linkAnh) {
+                        document.getElementById('managerImg').src = linkAnh;
+                    }
 
-                        // 3. Đồng bộ Logo khách sạn
-                        if (linkLogo) {
-                            const logoImg = document.getElementById('hotelLogo');
-                            logoImg.src = linkLogo;
-                            logoImg.style.display = 'block';
-                        }
+                    // 3. Cập nhật Logo nhận diện thương hiệu
+                    if (linkLogo) {
+                        const logoImg = document.getElementById('hotelLogo');
+                        logoImg.src = linkLogo;
+                        logoImg.style.display = 'block';
+                    }
 
-                        // 4. Đồng bộ Mã QR WhatsApp (Đã giải quyết lỗi phân tách chuỗi gãy link)
-                        if (linkQR) {
-                            const qrImg = document.getElementById('qrcode');
-                            qrImg.src = `https://qrserver.com{encodeURIComponent(linkQR)}`;
-                            qrImg.style.display = 'block';
-                        }
+                    // 4. ĐÃ SỬA LỖI TRIỆT ĐỂ: Gửi chuỗi URL sạch mã hóa đến API vẽ QR Code
+                    if (linkQR) {
+                        const qrImg = document.getElementById('qrcode');
+                        qrImg.src = `https://qrserver.com{encodeURIComponent(linkQR)}`;
+                        qrImg.style.display = 'block';
                     }
                 }
             } catch (error) {
-                console.error("Lỗi đồng bộ dữ liệu:", error);
+                console.error("Lỗi đồng bộ dữ liệu hệ thống:", error);
             }
         }
 
+        // Kích hoạt chu kỳ chạy quét dữ liệu liên tục mỗi 5 giây
         updateScreen();
         setInterval(updateScreen, 5000);
     </script>
