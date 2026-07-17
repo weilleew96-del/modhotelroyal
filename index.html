@@ -207,9 +207,19 @@ async function updateScreen(){
 
         const currentHour = new Date().getHours();
 
-        const isMODTime =
-            currentHour >= 17 &&
-            currentHour < 22;
+        
+const now = new Date();
+
+const currentHour = now.getHours();
+const currentMinute = now.getMinutes();
+
+const isMODTime =
+(
+    currentHour === 9 &&
+    currentMinute >= 48 &&
+    currentMinute < 55
+);
+
 
         const url =
             SHEET_URL +
