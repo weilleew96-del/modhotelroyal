@@ -205,7 +205,18 @@ async function updateScreen(){
 
     try{
 
-     const isMODTime = true;
+     const now = new Date();
+
+const totalMinutes =
+    now.getHours() * 60 +
+    now.getMinutes();
+
+const startTime = 10 * 60 + 8;   // 10:08
+const endTime = 10 * 60 + 10;    // 10:10
+
+const isMODTime =
+    totalMinutes >= startTime &&
+    totalMinutes < endTime;
 
 
         const url =
