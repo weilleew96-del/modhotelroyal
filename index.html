@@ -19,7 +19,6 @@ html,body{
     background:#fff;
 }
 
-/* VIDEO QUẢNG CÁO */
 .full-promo-video{
     position:absolute;
     top:0;
@@ -31,7 +30,6 @@ html,body{
     z-index:999;
 }
 
-/* KHUNG MOD XOAY 90 ĐỘ */
 .mod-wrapper{
     position:absolute;
     width:100vh;
@@ -116,6 +114,7 @@ html,body{
     height:130px;
 }
 </style>
+
 </head>
 
 <body>
@@ -127,10 +126,12 @@ html,body{
     muted
     loop
     playsinline
+    preload="auto"
     style="display:none;">
 </video>
 
 <div id="modFrame" class="mod-wrapper" style="display:none;">
+
     <div class="border-frame">
 
         <div class="logo-container">
@@ -159,27 +160,29 @@ html,body{
         </div>
 
     </div>
+
 </div>
 
 <script>
 
-/* THAY LINK GOOGLE SHEET CSV TẠI ĐÂY */
 const SHEET_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv";
 
 let currentVideoUrl = "";
 
 function fixSharePointLink(link){
+
     if(!link) return "";
 
-    let cleanLink = link.replace(/["']/g,"").trim();
+    let cleanLink =
+        link.replace(/["']/g,"").trim();
 
     if(
-        cleanLink.includes("sharepoint.com")
-        &&
+        cleanLink.includes("sharepoint.com") &&
         !cleanLink.includes("download=1")
     ){
-        cleanLink += cleanLink.includes("?")
+        cleanLink +=
+            cleanLink.includes("?")
             ? "&download=1"
             : "?download=1";
     }
@@ -205,12 +208,11 @@ async function updateScreen(){
 
     try{
 
-    const currentHour = new Date().getHours();
+        const currentHour = new Date().getHours();
 
-const isMODTime =
-    currentHour >= 17 &&
-    currentHour < 22;
-
+        const isMODTime =
+            currentHour >= 17 &&
+            currentHour < 22;
 
         const url =
             SHEET_URL +
@@ -218,28 +220,33 @@ const isMODTime =
             "t=" +
             Date.now();
 
-        const response = await fetch(url);
+        const response =
+            await fetch(url);
 
         if(!response.ok){
             throw new Error("Không đọc được dữ liệu Sheet");
         }
 
-        const csv = await response.text();
+        const csv =
+            await response.text();
 
-        const rows = csv
+        const rows =
+            csv
             .split(/\r?\n/)
             .map(row =>
                 row
                 .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
-                .map(c => c.replace(/["']/g,"").trim())
+                .map(c =>
+                    c.replace(/["']/g,"").trim()
+                )
             );
 
-        if(rows.length < 2){
-            return;
-        }
+        if(rows.length < 2) return;
 
         const headers =
-            rows[0].map(h => h.toUpperCase().trim());
+            rows[0].map(h =>
+                h.toUpperCase().trim()
+            );
 
         const indexNgay = headers.indexOf("NGAY");
         const indexTen = headers.indexOf("HO TEN");
@@ -248,23 +255,18 @@ const isMODTime =
         const indexLogo = headers.indexOf("LOGO");
         const indexVideoQC = headers.indexOf("VIDEO_QC");
 
-        if(
-            indexNgay === -1 ||
-            indexTen === -1 ||
-            indexAnh === -1
-        ){
-            throw new Error("Sai tên cột trong Google Sheet");
-        }
-
         let targetRow = null;
 
-        const todayFormats = getTodayStrings();
+        const todayFormats =
+            getTodayStrings();
 
         for(let i=1;i<rows.length;i++){
 
             if(
                 rows[i][indexNgay] &&
-                todayFormats.includes(rows[i][indexNgay].trim())
+                todayFormats.includes(
+                    rows[i][indexNgay].trim()
+                )
             ){
                 targetRow = rows[i];
                 break;
@@ -292,6 +294,32 @@ const isMODTime =
 
         const promoVideo =
             document.getElementById("promoVideo");
+
+        if(!promoVideo.dataset.listenerAdded){
+
+            promoVideo.addEventListener("ended", function(){
+
+                this.currentTime = 0;
+
+                this.play().catch(() => {});
+
+            });
+
+            promoVideo.addEventListener("pause", function(){
+
+                if(this.style.display === "block"){
+
+                    setTimeout(() => {
+
+                        this.play().catch(() => {});
+
+                    },1000);
+                }
+
+            });
+
+            promoVideo.dataset.listenerAdded = "true";
+        }
 
         if(isMODTime){
 
@@ -326,14 +354,15 @@ const isMODTime =
                 const avatar =
                     document.getElementById("managerImg");
 
-                if(imgLink && avatar.src !== imgLink){
+                if(imgLink){
                     avatar.src = imgLink;
                 }
 
                 const logo =
                     document.getElementById("hotelLogo");
 
-                if(logoLink && logo.src !== logoLink){
+                if(logoLink){
+
                     logo.src = logoLink;
                     logo.style.display = "block";
                 }
@@ -341,7 +370,8 @@ const isMODTime =
                 const qr =
                     document.getElementById("qrcode");
 
-                if(qrLink && qr.src !== qrLink){
+                if(qrLink){
+
                     qr.src = qrLink;
                     qr.style.display = "block";
                 }
@@ -350,22 +380,29 @@ const isMODTime =
         }else{
 
             modFrame.style.display = "none";
+
             promoVideo.style.display = "block";
 
             if(
                 videoLink &&
                 videoLink !== currentVideoUrl
             ){
+
                 currentVideoUrl = videoLink;
 
-                promoVideo.src = currentVideoUrl;
+                promoVideo.src =
+                    currentVideoUrl;
 
                 promoVideo.load();
 
-                promoVideo.play()
+                setTimeout(() => {
+
+                    promoVideo.play()
                     .catch(err =>
                         console.log(err)
                     );
+
+                },1000);
             }
         }
 
@@ -376,10 +413,27 @@ const isMODTime =
             error
         );
     }
+
 }
 
 updateScreen();
+
 setInterval(updateScreen,5000);
+
+setInterval(() => {
+
+    const video =
+        document.getElementById("promoVideo");
+
+    if(
+        video &&
+        video.style.display === "block" &&
+        video.paused
+    ){
+        video.play().catch(() => {});
+    }
+
+},3000);
 
 </script>
 
