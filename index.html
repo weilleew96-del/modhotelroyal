@@ -7,7 +7,6 @@
     <style>
         * { box-sizing: border-box; }
         
-        /* Cố định khung nền trình duyệt ngang */
         html, body {
             margin: 0; padding: 0; 
             background-color: #ffffff; 
@@ -17,11 +16,23 @@
             position: relative;
         }
 
-        /* KHỐI ÉP XOAY 90 ĐỘ CHUẨN: Bọc nội dung xoay dọc khớp kích thước TV đứng */
-        .main-wrapper {
+        /* KHỐI 1: Video Quảng cáo gốc dọc - GIỮ NGUYÊN HƯỚNG BẢN GỐC KHÔNG XOAY */
+        .full-promo-video {
             position: absolute;
-            width: 100vh;  /* Chiều rộng bằng chiều cao màn hình thực tế */
-            height: 100vw; /* Chiều cao bằng chiều rộng màn hình thực tế */
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            background-color: #000000;
+        }
+
+        /* KHỐI 2: KHUNG ÉP XOAY 90 ĐỘ CHỈ ÁP DỤNG CHO BẢNG CA TRỰC MOD */
+        .mod-wrapper {
+            position: absolute;
+            width: 100vh;  
+            height: 100vw; 
             top: 0;
             left: 100vw;
             transform: rotate(90deg);
@@ -35,7 +46,7 @@
             text-align: center;
         }
 
-        /* Khung viền hoa văn ôm khít theo chiều dọc TV đứng */
+        /* Giao diện Bảng ca trực MOD */
         .border-frame {
             border: 20px solid transparent;
             border-image: linear-gradient(to bottom right, #b8860b, #e6c280, #b8860b) 20;
@@ -71,7 +82,6 @@
             margin: 5px 0;
         }
 
-        /* Cân đối lại khung ảnh chân dung cho màn hình dọc đứng */
         .avatar-container {
             border: 6px solid #a37a3e;
             padding: 2px;
@@ -124,8 +134,11 @@
 </head>
 <body>
 
-    <!-- Khối bọc xoay nội dung -->
-    <div class="main-wrapper">
+    <!-- Video phát độc lập theo hướng gốc -->
+    <video class="full-promo-video" id="promoVideo" autoplay muted loop playsinline style="display:none;"></video>
+
+    <!-- Khối thông tin ca trực MOD bọc riêng để xoay 90 độ -->
+    <div class="mod-wrapper" id="modFrame" style="display:none;">
         <div class="border-frame">
             <div class="logo-container">
                 <img id="hotelLogo" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='1' height='1'></svg>" alt="Hotel Logo" style="display:none;">
@@ -151,7 +164,9 @@
     </div>
 
     <script>
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv'; 
+        const SHEET_URL = 'https://google.com'; 
+
+        let currentVideoUrl = "";
 
         function fixSharePointLink(link) {
             if (!link) return "";
@@ -167,87 +182,101 @@
             const d = today.getDate();
             const m = today.getMonth() + 1;
             const yyyy = today.getFullYear();
-            
-            const dd = String(d).padStart(2, '0');
-            const mm = String(m).padStart(2, '0');
-            
-            return [`${dd}/${mm}/${yyyy}`, `${d}/${m}/${yyyy}`];
+            return [`${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${yyyy}`, `${d}/${m}/${yyyy}`];
         }
 
         async function updateScreen() {
             try {
+                // Kiểm tra giờ hệ thống thực tế của Tivi
+                const currentHour = new Date().getHours();
+                const isMODTime = (currentHour >= 17 && currentHour < 22); // Bật MOD từ 17h00 đến 21h59
+
                 const response = await fetch(SHEET_URL + '&t=' + new Date().getTime());
                 if (!response.ok) throw new Error('Không thể kết nối Google Sheets');
                 
                 const textData = await response.text();
-                // Thuật toán tách dòng bằng biểu thức chính quy (Regex) tối ưu tuyệt đối
                 const rows = textData.split(/\r?\n/).map(row => {
                     return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/["']/g, "").trim());
                 });
 
                 if (rows.length > 0) {
-                    const headers = rows[0].map(h => h.toUpperCase().trim());
-                    
+                    const headers = rows.map(h => h.toUpperCase().trim());
                     const indexNgay = headers.indexOf("NGAY");
                     const indexTen = headers.indexOf("HO TEN");
                     const indexAnh = headers.indexOf("ANH");
                     const indexQR = headers.indexOf("WHATSAPP");
                     const indexLogo = headers.indexOf("LOGO");
+                    const indexVideoQC = headers.indexOf("VIDEO_QC");
 
                     const todayFormats = getTodayStrings();
                     let targetRow = null;
 
+                    // 1. Quét tìm hàng trùng ngày hôm nay để lấy thông tin ca trực MOD
                     for (let i = 1; i < rows.length; i++) {
-                        if (rows[i] && rows[i][indexNgay]) {
-                            const currentSheetDate = rows[i][indexNgay].trim();
-                            if (todayFormats.includes(currentSheetDate)) {
-                                targetRow = rows[i];
-                                break;
-                            }
+                        if (rows[i] && rows[i][indexNgay] && todayFormats.includes(rows[i][indexNgay].trim())) {
+                            targetRow = rows[i];
+                            break;
                         }
                     }
 
-                    if (!targetRow) {
-                        for (let i = 1; i < rows.length; i++) {
-                            if (rows[i] && rows[i][indexTen] && rows[i][indexTen] !== "") {
-                                targetRow = rows[i];
-                                break;
-                            }
-                        }
+                    // Dự phòng nếu không thấy dòng trùng ngày
+                    if (!targetRow && rows.length > 1) {
+                        targetRow = rows[1];
                     }
 
-                    if (targetRow) {
-                        const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
-                        const linkAnh = fixSharePointLink(targetRow[indexAnh]);
-                        const linkQR = fixSharePointLink(targetRow[indexQR]);
-                        const linkLogo = fixSharePointLink(targetRow[indexLogo]);
+                    // 2. Ép cố định bốc duy nhất link video ở ô G2 (Dòng dữ liệu đầu tiên)
+                    let linkVideoQC = "";
+                    if (rows.length > 1 && rows[1][indexVideoQC]) {
+                        linkVideoQC = fixSharePointLink(rows[1][indexVideoQC]);
+                    }
 
-                        document.getElementById('managerName').innerText = tenNhanVien;
+                    const modFrame = document.getElementById('modFrame');
+                    const videoTag = document.getElementById('promoVideo');
+
+                    // ĐIỀU PHỐI HIỂN THỊ
+                    if (isMODTime) {
+                        // Khung giờ 17h - 22h: Ẩn hoàn toàn video, bật bảng thông tin ca trực MOD
+                        videoTag.style.display = 'none';
+                        videoTag.src = "";
+                        currentVideoUrl = "";
                         
-                        if (linkAnh) {
-                            document.getElementById('managerImg').src = linkAnh;
-                        }
+                        modFrame.style.display = 'flex';
 
-                        if (linkLogo) {
-                            const logoImg = document.getElementById('hotelLogo');
-                            logoImg.src = linkLogo;
-                            logoImg.style.display = 'block';
-                        }
+                        if (targetRow) {
+                            const tenNhanVien = targetRow[indexTen] || "CHƯA CÓ TÊN";
+                            const linkAnh = fixSharePointLink(targetRow[indexAnh]);
+                            const linkQR = fixSharePointLink(targetRow[indexQR]);
+                            const linkLogo = fixSharePointLink(targetRow[indexLogo]);
 
-                        if (linkQR) {
-                            const qrImg = document.getElementById('qrcode');
-                            qrImg.src = linkQR;
-                            qrImg.style.display = 'block';
+                            document.getElementById('managerName').innerText = tenNhanVien;
+                            if (linkAnh) document.getElementById('managerImg').src = linkAnh;
+                            if (linkLogo) {
+                                const logoImg = document.getElementById('hotelLogo');
+                                logoImg.src = linkLogo;
+                                logoImg.style.display = 'block';
+                            }
+                            if (linkQR) {
+                                const qrImg = document.getElementById('qrcode');
+                                qrImg.src = linkQR;
+                                qrImg.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        // Ngoài khung giờ trên: Ẩn bảng MOD, phát video gốc dọc tràn viền không xoay
+                        modFrame.style.display = 'none';
+                        videoTag.style.display = 'block';
+
+                        if (linkVideoQC && linkVideoQC !== currentVideoUrl) {
+                            currentVideoUrl = linkVideoQC;
+                            videoTag.src = linkVideoQC;
+                            videoTag.play().catch(e => console.log("Chờ tivi tương tác phát video"));
                         }
                     }
                 }
             } catch (error) {
-                console.error("Lỗi đồng bộ dữ liệu:", error);
+                console.error("Lỗi vận hành hệ thống:", error);
             }
         }
 
         updateScreen();
         setInterval(updateScreen, 5000);
-    </script>
-</body>
-</html>
