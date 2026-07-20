@@ -344,9 +344,14 @@ async function updateScreen(){
                     );
 
                 const logoLink =
-                    fixSharePointLink(
-                        targetRow[indexLogo]
-                    );
+    (
+        indexLogo !== -1 &&
+        rows[1][indexLogo]
+    )
+    ? fixSharePointLink(
+        rows[1][indexLogo]
+      )
+    : "";
 
                 document.getElementById("managerName")
                     .innerText = managerName;
