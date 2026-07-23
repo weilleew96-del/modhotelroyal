@@ -129,6 +129,10 @@ html,body{
     preload="auto"
     style="display:none;">
 </video>
+    <img
+    id="promoImage"
+    class="full-promo-video"
+    style="display:none;object-fit:cover;">
 
 <div id="modFrame" class="mod-wrapper" style="display:none;">
 
@@ -169,6 +173,7 @@ const SHEET_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv";
 
 let currentVideoUrl = "";
+let currentImageUrl = "";
 
 function fixSharePointLink(link){
 
@@ -254,6 +259,7 @@ async function updateScreen(){
         const indexQR = headers.indexOf("WHATSAPP");
         const indexLogo = headers.indexOf("LOGO");
         const indexVideoQC = headers.indexOf("VIDEO_QC");
+        const indexAnhQC = headers.indexOf("ANH_QC");
 
         let targetRow = null;
 
@@ -278,32 +284,68 @@ async function updateScreen(){
         }
 
         let videoLink = "";
+        let imageQCLink = "";
 
         if(
-            indexVideoQC !== -1 &&
+    indexVideoQC !== -1 &&
+    rows[1][indexVideoQC]
+){
+    videoLink =
+        fixSharePointLink(
             rows[1][indexVideoQC]
-        ){
-            videoLink =
-                fixSharePointLink(
-                    rows[1][indexVideoQC]
-                );
-        }
+        );
+}
+
+if(
+    indexAnhQC !== -1 &&
+    rows[1][indexAnhQC]
+){
+    imageQCLink =
+        fixSharePointLink(
+            rows[1][indexAnhQC]
+        );
+}
 
         const modFrame =
             document.getElementById("modFrame");
 
         const promoVideo =
-            document.getElementById("promoVideo");
+    document.getElementById("promoVideo");
+
+const promoImage =
+    document.getElementById("promoImage");
 
         if(!promoVideo.dataset.listenerAdded){
 
             promoVideo.addEventListener("ended", function(){
 
-                this.currentTime = 0;
+    if(!currentImageUrl){
 
-                this.play().catch(() => {});
+        this.currentTime = 0;
+        this.play().catch(() => {});
+        return;
 
-            });
+    }
+
+    promoVideo.style.display = "none";
+
+    promoImage.src = currentImageUrl;
+
+    promoImage.style.display = "block";
+
+    setTimeout(() => {
+
+        promoImage.style.display = "none";
+
+        promoVideo.style.display = "block";
+
+        promoVideo.currentTime = 0;
+
+        promoVideo.play().catch(() => {});
+
+    },15000);
+
+});
 
             promoVideo.addEventListener("pause", function(){
 
@@ -324,7 +366,9 @@ async function updateScreen(){
         if(isMODTime){
 
             promoVideo.pause();
-            promoVideo.style.display = "none";
+promoVideo.style.display = "none";
+
+promoImage.style.display = "none";
 
             modFrame.style.display = "flex";
 
@@ -394,6 +438,7 @@ async function updateScreen(){
             ){
 
                 currentVideoUrl = videoLink;
+                currentImageUrl = imageQCLink;
 
                 promoVideo.src =
                     currentVideoUrl;
