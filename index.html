@@ -124,22 +124,11 @@ html,body{
     class="full-promo-video"
     autoplay
     muted
+    loop
     playsinline
     preload="auto"
     style="display:none;">
 </video>
-    <img
-    id="promoImage"
-    style="
-        display:none;
-        position:absolute;
-        top:0;
-        left:0;
-        width:100vw;
-        height:100vh;
-        object-fit:cover;
-        z-index:999;
-    ">
 
 <div id="modFrame" class="mod-wrapper" style="display:none;">
 
@@ -180,7 +169,6 @@ const SHEET_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMa0XQNuk2RGjjxFu1OrDUT5Zph0il_-wxdgWStnRbydzgbKeg7fs0pqaVMCVQaQVO-wC4Pf6AJrLD/pub?output=csv";
 
 let currentVideoUrl = "";
-let currentImageUrl = "";
 
 function fixSharePointLink(link){
 
@@ -266,7 +254,6 @@ async function updateScreen(){
         const indexQR = headers.indexOf("WHATSAPP");
         const indexLogo = headers.indexOf("LOGO");
         const indexVideoQC = headers.indexOf("VIDEO_QC");
-        const indexAnhQC = headers.indexOf("ANH_QC");
 
         let targetRow = null;
 
@@ -291,77 +278,32 @@ async function updateScreen(){
         }
 
         let videoLink = "";
-        let imageQCLink = "";
 
         if(
-    indexVideoQC !== -1 &&
-    rows[1][indexVideoQC]
-){
-    videoLink =
-        fixSharePointLink(
+            indexVideoQC !== -1 &&
             rows[1][indexVideoQC]
-        );
-}
-
-if(
-    indexAnhQC !== -1 &&
-    rows[1][indexAnhQC]
-){
-    imageQCLink =
-        fixSharePointLink(
-            rows[1][indexAnhQC]
-        );
-}
+        ){
+            videoLink =
+                fixSharePointLink(
+                    rows[1][indexVideoQC]
+                );
+        }
 
         const modFrame =
             document.getElementById("modFrame");
 
         const promoVideo =
-    document.getElementById("promoVideo");
-
-const promoImage =
-    document.getElementById("promoImage");
+            document.getElementById("promoVideo");
 
         if(!promoVideo.dataset.listenerAdded){
 
             promoVideo.addEventListener("ended", function(){
 
-    console.log("VIDEO END");
+                this.currentTime = 0;
 
-    console.log("currentImageUrl =", currentImageUrl);
+                this.play().catch(() => {});
 
-    if(!currentImageUrl){
-
-        console.log("KHONG TIM THAY ANH_QC");
-
-        this.currentTime = 0;
-
-        this.play().catch(() => {});
-        return;
-
-    }
-
-    console.log("HIEN THI ANH_QC");
-
-    promoVideo.style.display = "none";
-
-    promoImage.src = currentImageUrl;
-
-    promoImage.style.display = "block";
-
-    setTimeout(() => {
-
-        promoImage.style.display = "none";
-
-        promoVideo.style.display = "block";
-
-        promoVideo.currentTime = 0;
-
-        promoVideo.play().catch(() => {});
-
-    },30000);
-
-});
+            });
 
             promoVideo.addEventListener("pause", function(){
 
@@ -382,9 +324,7 @@ const promoImage =
         if(isMODTime){
 
             promoVideo.pause();
-promoVideo.style.display = "none";
-
-promoImage.style.display = "none";
+            promoVideo.style.display = "none";
 
             modFrame.style.display = "flex";
 
@@ -454,11 +394,11 @@ promoImage.style.display = "none";
             ){
 
                 currentVideoUrl = videoLink;
-                currentImageUrl = imageQCLink;
 
                 promoVideo.src =
                     currentVideoUrl;
 
+                promoVideo.load();
 
                 setTimeout(() => {
 
@@ -484,7 +424,7 @@ promoImage.style.display = "none";
 updateScreen();
 
 setInterval(updateScreen,300000);
-/*
+
 setInterval(() => {
 
     const video =
@@ -499,7 +439,7 @@ setInterval(() => {
     }
 
 },3000);
-*/
+
 </script>
 
 </body>
