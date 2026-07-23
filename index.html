@@ -131,7 +131,7 @@ html,body{
     <img
     id="promoImage"
     class="full-promo-video"
-    style="display:none;object-fit:cover;">
+    style="display:none;object-fit:contain;background:#000;">
 
 <div id="modFrame" class="mod-wrapper" style="display:none;">
 
@@ -351,7 +351,7 @@ const promoImage =
 
         promoVideo.play().catch(() => {});
 
-    },15000);
+    },30000);
 
 });
 
