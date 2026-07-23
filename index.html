@@ -318,13 +318,22 @@ const promoImage =
 
             promoVideo.addEventListener("ended", function(){
 
+    console.log("VIDEO END");
+
+    console.log("currentImageUrl =", currentImageUrl);
+
     if(!currentImageUrl){
 
+        console.log("KHONG TIM THAY ANH_QC");
+
         this.currentTime = 0;
+
         this.play().catch(() => {});
         return;
 
     }
+
+    console.log("HIEN THI ANH_QC");
 
     promoVideo.style.display = "none";
 
