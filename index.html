@@ -130,8 +130,16 @@ html,body{
 </video>
     <img
     id="promoImage"
-    class="full-promo-video"
-    style="display:none;object-fit:contain;background:#000;">
+    style="
+        display:none;
+        position:absolute;
+        top:0;
+        left:0;
+        width:100vw;
+        height:100vh;
+        object-fit:cover;
+        z-index:999;
+    ">
 
 <div id="modFrame" class="mod-wrapper" style="display:none;">
 
